@@ -1,7 +1,8 @@
 // MODELS
 const Pet = require('../models/pet');
-
-<<<<<<< HEAD
+const multer  = require('multer');
+const upload = multer({ dest: 'uploads/' });
+const Upload = require('s3-uploader');
 
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.PRIVATE_STRIPE_API_KEY);
@@ -32,8 +33,6 @@ const client = new Upload(process.env.S3_BUCKET, {
     suffix: '-square'
   }]
 });
-=======
->>>>>>> parent of fa0d415 (implemented s3)
 // PET ROUTES
 module.exports = (app) => {
 
