@@ -16,8 +16,19 @@ block content
                     label Species
                     input.form-control(name="species" value=pet.species)    
                 .form-group
+<<<<<<< HEAD
+                    label Price*
+                    textarea.form-control(name="price" required type="number")
+                .form-group
                     label Avatar
                     input.form-control(name="avatar" type="file" value=pet.picUrl)
+=======
+                    label Rectangular Image URL
+                    input.form-control(name="picUrl" value=pet.picUrl) 
+                .form-group
+                    label Square Image URL
+                    input.form-control(name="picUrlSq" value=pet.picUrlSq) 
+>>>>>>> parent of fa0d415 (implemented s3)
                 .form-group
                     label Favorite Food
                     input.form-control(name="favoriteFood" value=pet.favoriteFood)    

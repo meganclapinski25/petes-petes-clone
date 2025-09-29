@@ -12,11 +12,13 @@ const bodyParser = require('body-parser');
 const methodOverride = require('method-override')
 require('dotenv').config();
 
-const app = express();
 
+
+const app = express();
+app.locals.PUBLIC_STRIPE_API_KEY = process.env.PUBLIC_STRIPE_API_KEY
 
 // server.js
-app.locals.PUBLIC_STRIPE_API_KEY = process.env.PUBLIC_STRIPE_API_KEY
+
 
 
 const mongoose = require('mongoose');
