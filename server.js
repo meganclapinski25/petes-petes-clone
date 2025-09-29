@@ -13,6 +13,8 @@ const methodOverride = require('method-override')
 require('dotenv').config();
 
 
+  
+
 
 const app = express();
 app.locals.PUBLIC_STRIPE_API_KEY = process.env.PUBLIC_STRIPE_API_KEY
@@ -28,6 +30,9 @@ mongoose.connect('mongodb://localhost/local', {
   useCreateIndex: true,
   useFindAndModify: false
 });
+
+
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
