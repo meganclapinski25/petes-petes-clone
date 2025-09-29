@@ -1,7 +1,15 @@
 "use strict";
 
 const mongoose = require('mongoose'),
-        Schema = mongoose.Schema;
+      Schema = mongoose.Schema;
+
+
+const mongoosePaginate = require('mongoose-paginate');
+
+mongoosePaginate.paginate.options = {
+    limit: 3 
+};
+
 
 const PetSchema = new Schema({
     name            : { type: String, required: true }
@@ -15,5 +23,7 @@ const PetSchema = new Schema({
 {
   timestamps: true
 });
+
+PetSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Pet', PetSchema);
