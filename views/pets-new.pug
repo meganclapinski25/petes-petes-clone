@@ -1,33 +1,30 @@
 extends layout
 
 block content
+    
   .row.justify-content-center
     .col-sm-6
       legend New Pet
-      form#new-pet(action="#", method="post")
+      form#new-pet(action="/pets", method="post")
         .form-group
-            label Name*
+            label Name
             input.form-control(name="name" required)
         .form-group
-            label Birthday*
+            label Birthday
             input.form-control(name="birthday" required)
         .form-group
-            label Species*
+            label Species
             input.form-control(name="species" required)
         .form-group
-            label Rectangular Image URL*
-            input.form-control(name="picUrl" required type="url")
+            label Avatar*
+            input.form-control(name="avatar" type="file" required)
         .form-group
-            label Square Image URL*
-            input.form-control(name="picUrlSq" required type="url")   
-        .form-group
-            label Favorite Food*
+            label Favorite Food
             input.form-control(name="favoriteFood" required)
         .form-group
-            label Description*
-            textarea.form-control(name="description" required minlength="140")
+            label Price ($)
+            input.form-control(name="price" type="number" step="0.01" min="0" required)
         .form-group
-            label Price*
-            textarea.form-control(name="price" required type="number")
-        .text-right
-          button.btn.btn-primary(type="submit") Save
+            label Description
+            textarea.form-control(name="description" required minlength="140")
+        button(type="submit").btn.btn-primary Save

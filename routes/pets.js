@@ -45,17 +45,42 @@ module.exports = (app) => {
   });
 
   // CREATE PET
-  app.post('/pets', (req, res) => {
+  app.post('/pets', upload.single('avatar'), (req, res, next) => {
     var pet = new Pet(req.body);
-
     pet.save()
-      .then((pet) => {
-        res.send({ pet: pet });
+      .then(() => {
+        if (req.file) {
+          // Upload the images
+          client.upload(req.file.path, {}, function (err, versions, meta) {
+            if (err) { return res.status(400).send({ err: err }) };
+
+            // Pop off the -square and -standard and just use the one URL to grab the image
+            versions.forEach(function (image) {
+              var urlArray = image.url.split('-');
+              urlArray.pop();
+              var url = urlArray.join('-');
+              pet.avatarUrl = url;
+              pet.save();
+            });
+
+            res.send({ pet: pet });
+          });
+        } else {
+          res.send({ pet: pet });
+        }
       })
       .catch((err) => {
-        // STATUS OF 400 FOR VALIDATIONS
-        res.status(400).send(err.errors);
-      }) ;
+        console.error('Error saving pet:', err);
+        console.error('Validation errors:', err.errors);
+        if (err.name === 'ValidationError') {
+          const validationErrors = Object.keys(err.errors).map(key => ({
+            field: key,
+            message: err.errors[key].message
+          }));
+          console.error('Detailed validation errors:', validationErrors);
+        }
+        res.status(400).send({ err: err.message || err });
+      });
   });
 
   // SHOW PET
