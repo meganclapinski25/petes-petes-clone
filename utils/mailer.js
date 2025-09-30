@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const mg = require('nodemailer-mailgun-transport');
 
 // auth with our mailgun API key and domain
+// can auth tried 50x
 const auth = {
   auth: {
     api_key: process.env.MAILGUN_API_KEY,
