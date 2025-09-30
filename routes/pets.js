@@ -1,16 +1,11 @@
 // MODELS
 const Pet = require('../models/pet');
+const mailer = require('../utils/mailer');
+
+// UPLOADING TO AWS S3
 const multer  = require('multer');
 const upload = multer({ dest: 'uploads/' });
 const Upload = require('s3-uploader');
-const mailer = require('../utils/mailer');
-
-const Stripe = require('stripe');
-const stripe = Stripe(process.env.PRIVATE_STRIPE_API_KEY);
-console.log(
-  'Stripe server key prefix:',
-  (process.env.PRIVATE_STRIPE_API_KEY || '').slice(0, 3) // should be "sk_"
-);
 
 const client = new Upload(process.env.S3_BUCKET, {
   aws: {
@@ -34,6 +29,7 @@ const client = new Upload(process.env.S3_BUCKET, {
     suffix: '-square'
   }]
 });
+
 // PET ROUTES
 module.exports = (app) => {
 
@@ -85,58 +81,50 @@ module.exports = (app) => {
 
   // SHOW PET
   app.get('/pets/:id', (req, res) => {
-    Pet.findById(req.params.id).exec((err, pet) => {
-      res.render('pets-show', { pet: pet });
-    });
+    Pet.findById(req.params.id).exec()
+      .then((pet) => {
+        res.render('pets-show', { pet: pet });
+      })
+      .catch((err) => {
+        console.error('Error finding pet:', err);
+        res.status(404).render('error', { message: 'Pet not found', error: err });
+      });
   });
 
   // EDIT PET
   app.get('/pets/:id/edit', (req, res) => {
-    Pet.findById(req.params.id).exec((err, pet) => {
-      res.render('pets-edit', { pet: pet });
-    });
+    Pet.findById(req.params.id).exec()
+      .then((pet) => {
+        res.render('pets-edit', { pet: pet });
+      })
+      .catch((err) => {
+        console.error('Error finding pet for edit:', err);
+        res.status(404).render('error', { message: 'Pet not found', error: err });
+      });
   });
 
- // PURCHASE
- app.post('/pets/:id/purchase', (req, res) => {
-  console.log(req.body);
-  // Set your secret key: remember to change this to your live secret key in production
-  // See your keys here: https://dashboard.stripe.com/account/apikeys
-  var stripe = require("stripe")(process.env.PRIVATE_STRIPE_API_KEY);
-
-  // Token is created using Checkout or Elements!
-  // Get the payment token ID submitted by the form:
-  const token = req.body.stripeToken; // Using Express
-
-  // req.body.petId can become null through seeding,
-  // this way we'll insure we use a non-null value
-  let petId = req.body.petId || req.params.id;
-
-  Pet.findById(petId).exec((err, pet) => {
-    if(err) {
-      console.log('Error: ' + err);
-      res.redirect(`/pets/${req.params.id}`);
-    }
-    const charge = stripe.charges.create({
-      amount: pet.price * 100,
-      currency: 'usd',
-      description: `Purchased ${pet.name}, ${pet.species}`,
-      source: token,
-    }).then((chg) => {
-    // Convert the amount back to dollars for ease in displaying in the template
-      const user = {
-        email: req.body.stripeEmail,
-        amount: chg.amount / 100,
-        petName: pet.name
-      };
-      // Call our mail handler to manage sending emails
-      mailer.sendMail(user, req, res);
-    })
-    .catch(err => {
-      console.log('Error: ' + err);
-    });
-  })
-});
+  // SEARCH PET
+  app.get('/search', function (req, res) {
+    Pet
+        .find(
+            { $text : { $search : req.query.term } },
+            { score : { $meta: "textScore" } }
+        )
+        .sort({ score : { $meta : 'textScore' } })
+        .limit(20)
+        .exec()
+        .then((pets) => {
+          if (req.header('Content-Type') == 'application/json') {
+            return res.json({ pets: pets });
+          } else {
+            return res.render('pets-index', { pets: pets, term: req.query.term });
+          }
+        })
+        .catch((err) => {
+          console.error('Search error:', err);
+          return res.status(400).send(err);
+        });
+  });
 
   // UPDATE PET
   app.put('/pets/:id', (req, res) => {
@@ -149,21 +137,58 @@ module.exports = (app) => {
       });
   });
 
-  // DELETE PET
-  app.delete('/pets/:id', (req, res) => {
-    Pet.findByIdAndRemove(req.params.id).exec((err, pet) => {
-      return res.redirect('/')
-    });
+  // PURCHASE
+  app.post('/pets/:id/purchase', (req, res) => {
+    console.log(req.body);
+    var stripe = require("stripe")(process.env.PRIVATE_STRIPE_API_KEY);
+
+    const token = req.body.stripeToken;
+    let petId = req.body.petId || req.params.id;
+
+    Pet.findById(petId).exec()
+      .then((pet) => {
+        if (!pet) {
+          console.log('Pet not found');
+          return res.redirect(`/pets/${req.params.id}`);
+        }
+        if (!pet.price || isNaN(pet.price)) {
+          console.log('Invalid pet price:', pet.price);
+          return res.redirect(`/pets/${req.params.id}`);
+        }
+        const charge = stripe.charges.create({
+          amount: Math.round(pet.price * 100),
+          currency: 'usd',
+          description: `Purchased ${pet.name}, ${pet.species}`,
+          source: token,
+        }).then((chg) => {
+          // Convert the amount back to dollars for ease in displaying in the template
+          const user = {
+            email: req.body.stripeEmail,
+            amount: chg.amount / 100,
+            petName: pet.name
+          };
+          // Call our mail handler to manage sending emails
+          mailer.sendMail(user, req, res);
+        })
+        .catch(err => {
+          console.log('Error: ' + err);
+        });
+      })
+      .catch((err) => {
+        console.log('Error: ' + err);
+        res.redirect(`/pets/${req.params.id}`);
+      });
   });
 
-  /// SEARCH PET
-  app.get('/search', (req, res) => {
-    term = new RegExp(req.query.term, 'i')
-    Pet.find({$or:[
-      {'name': term},
-      {'species': term}
-    ]}).exec((err, pets) => {
-      res.render('pets-index', { pets: pets });
-    })
+  // DELETE PET
+  app.delete('/pets/:id', (req, res) => {
+    Pet.findByIdAndDelete(req.params.id).exec()
+      .then((pet) => {
+        return res.redirect('/');
+      })
+      .catch((err) => {
+        console.error('Error deleting pet:', err);
+        return res.redirect('/');
+      });
   });
-}
+};

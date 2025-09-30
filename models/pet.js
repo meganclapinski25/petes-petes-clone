@@ -13,18 +13,17 @@ mongoosePaginate.paginate.options = {
 
 
 const PetSchema = new Schema({
-  name: { type: String, required: true }
-  , birthday: {type: String, required: true }
-  , species: { type: String, required: true }
-  , picUrl: { type: String }
-  , picUrlSq: { type: String}
-  , avatarUrl: { type: String, required: true }
-  , favoriteFood: { type: String, required: true }
-  , description: { type: String, minlength: 140, required: true }
-  , price: {type: Number, required: true }
-}, {
-  timestamps: true
-});
+  name: { type: String, required: true },
+  birthday: { type: String, required: true },
+  species: { type: String, required: true },
+  picUrl: { type: String },          // no longer required
+  picUrlSq: { type: String },        // no longer required
+  avatarUrl: { type: String },       // <- make NOT required
+  favoriteFood: { type: String, required: true },
+  description: { type: String, minlength: 140, required: true },
+  price: { type: Number, required: true }
+}, { timestamps: true });
+
 
 PetSchema.index(
   { name: 'text', species: 'text', favoriteFood: 'text', description: 'text' },
